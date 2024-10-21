@@ -1,0 +1,115 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        select, button { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>MongoDB Viewer</h1>
+    <input type="text" id="connectionString" placeholder="MongoDB Connection String" />
+    <button id="connectButton">Connect</button>
+
+    <h2>Select Database</h2>
+    <select id="databaseDropdown" disabled></select>
+
+    <h2>Select Collection</h2>
+    <select id="collectionDropdown" disabled></select>
+
+    <h2>Documents</h2>
+    <pre id="documentsDisplay"></pre>
+
+    <script>
+        document.getElementById('connectButton').addEventListener('click', async () => {
+            const connectionString = document.getElementById('connectionString').value;
+            const response = await fetch('http://localhost:5000/databases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ connectionString })
+            });
+
+            const databases = await response.json();
+            const dbDropdown = document.getElementById('databaseDropdown');
+            dbDropdown.innerHTML = '';
+            databases.forEach(db => {
+                const option = document.createElement('option');
+                option.value = db;
+                option.textContent = db;
+                dbDropdown.appendChild(option);
+            });
+            dbDropdown.disabled = false;
+        });
+
+        document.getElementById('databaseDropdown').addEventListener('change', async (event) => {
+            const connectionString = document.getElementById('connectionString').value;
+            const databaseName = event.target.value;
+            const response = await fetch('http://localhost:5000/collections', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ connectionString, databaseName })
+            });
+
+            const collections = await response.json();
+            const collectionDropdown = document.getElementById('collectionDropdown');
+            collectionDropdown.innerHTML = '';
+            collections.forEach(col => {
+                const option = document.createElement('option');
+                option.value = col;
+                option.textContent = col;
+                collectionDropdown.appendChild(option);
+            });
+            collectionDropdown.disabled = false;
+        });
+
+document.getElementById('collectionDropdown').addEventListener('change', async (event) => {
+    const connectionString = document.getElementById('connectionString').value;
+    const databaseName = document.getElementById('databaseDropdown').value;
+    const collectionName = event.target.value;
+    const response = await fetch('http://localhost:5000/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectionString, databaseName, collectionName })
+    });
+
+    const documents = await response.json();
+    const display = document.getElementById('documentsDisplay');
+
+    // Clear previous content
+    display.innerHTML = '';
+
+    // Create a table
+    const table = document.createElement('table');
+    table.border = '1';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    Object.keys(documents[0] || {}).forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = key;
+        headerRow.appendChild(th);
+    });
+    table.appendChild(headerRow);
+
+    // Create body rows
+    documents.forEach(doc => {
+        const row = document.createElement('tr');
+        Object.values(doc).forEach(value => {
+            const td = document.createElement('td');
+            td.textContent = value;
+            row.appendChild(td);
+        });
+        table.appendChild(row);
+    });
+
+    // Append the table to the display area
+    display.appendChild(table);
+});
+
+    </script>
+</body>
+</html>
